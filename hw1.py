@@ -108,7 +108,25 @@ def forward_propagation(network, row, y):
 
     # 6. Cross Entropy Loss
     loss = cross_entropy_loss(y, s_o)
-    print(loss)
+
+    # Optional: Get one hot encoding of prediction
+    guess = np.zeros_like(s_o)
+    max = s_o[0][0]
+    max_index = 0
+
+    for i in range(250):
+        if s_o[0][i] > max:
+            max = s_o[0][i]
+            max_index = i
+    guess[0][max_index] = 1
+
+    return loss, guess
+
+def forward_propagation_batch(input_batch, target_batch):
+
+
+
+    print("Accuracy:", 0)
 
 def main():
 
@@ -126,7 +144,12 @@ def main():
     # network[4] = b2 -> (1, 250)
     network = initialize_network()
 
-    forward_propagation(network,converted_train_inputs[0],converted_train_targets[0])
+    loss, guess = forward_propagation(network,converted_train_inputs[0],converted_train_targets[0])
+
+    input_batch = converted_train_inputs[0:5]
+    target_batch = converted_train_targets[0:5]
+
+    #print(input_batch)
 
 if __name__ == '__main__':
     main()
