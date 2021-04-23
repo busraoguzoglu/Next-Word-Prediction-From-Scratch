@@ -160,7 +160,7 @@ class NeuralNetwork:
         # network[3] = w3 -> (128,250)
         # network[4] = b2 -> (1, 250)
 
-        #self.network[0] += learning_rate * dw1
+        self.network[0] -= learning_rate * dw1
         self.network[1] -= learning_rate * dw2
         self.network[2] -= learning_rate * db1
         self.network[3] -= learning_rate * dw3
@@ -251,17 +251,20 @@ def main():
     #input_batch = converted_train_inputs[0:500]
     #target_batch = converted_train_targets[0:500]
 
-    learning_rate = 0.05
-    batch_size = 500
+    learning_rate = 0.005
+    batch_size = 25
 
     train_length = len(train_inputs)
     total_batch_number = train_length/batch_size
 
     all_loss = []
 
-    for i in range(400):
-        input_batch = converted_train_inputs[i*batch_size:i*batch_size+batch_size]
-        target_batch = converted_train_targets[i * batch_size:i * batch_size + batch_size]
+    for i in range(7500):
+        #input_batch = converted_train_inputs[i*batch_size:i*batch_size+batch_size]
+        #target_batch = converted_train_targets[i * batch_size:i * batch_size + batch_size]
+
+        input_batch = converted_train_inputs[0:25]
+        target_batch = converted_train_targets[0:25]
 
         average_loss, total_loss, guesses, f_h_batch, s_o_batch, e_batch = network.forward_propagation_batch(batch_size, input_batch, target_batch)
         dw3, db2, dw2, db1, dw1 = network.backprop(input_batch, target_batch, f_h_batch, s_o_batch, e_batch)
