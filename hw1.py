@@ -63,7 +63,7 @@ class NeuralNetwork:
                 max_index = i
         guess[0][max_index] = 1
 
-        return loss, guess, f_h, s_o
+        return loss, guess, f_h, s_o, e
 
     # Forward propagate batch:
     def forward_propagation_batch(self, batch_size, input_batch, target_batch):
@@ -72,13 +72,15 @@ class NeuralNetwork:
         guesses = []
         f_h_batch = [] # hidden layer
         s_o_batch =[] # output layer
+        e_batch = [] # embeddings for batch
 
         for i in range(batch_size):
-            loss, guess, f_h, s_o = self.forward_propagation(input_batch[i], target_batch[i])
+            loss, guess, f_h, s_o, e = self.forward_propagation(input_batch[i], target_batch[i])
             losses.append(loss)
             guesses.append(guess)
             f_h_batch.append(f_h)
             s_o_batch.append(s_o)
+            e_batch.append(e)
 
         average_loss = np.average(losses)
         total_loss = np.sum(losses)
@@ -86,10 +88,10 @@ class NeuralNetwork:
         print("\nAverage loss over batch:", np.round(average_loss, decimals=2))
         print("\nTotal loss over batch:", np.round(total_loss, decimals=2))
 
-        return average_loss, total_loss, guesses, f_h_batch, s_o_batch
+        return average_loss, total_loss, guesses, f_h_batch, s_o_batch, e_batch
 
     # Calculate gradients:
-    def backprop(self, target_batch, f_h_batch, s_o_batch):
+    def backprop(self, target_batch, f_h_batch, s_o_batch, e_batch):
 
         # Return dw3, db2, dw2, db1, dw1
 
@@ -98,11 +100,21 @@ class NeuralNetwork:
         y = np.array(target_batch)  # y -> nx250
         fh = np.array(f_h_batch)
         fh = np.squeeze(fh) # fh -> nx128
+        e = np.array(e_batch)
+        e = np.squeeze(e) # e -> nx48
 
         dw3 = np.dot(fh.T, so-y) # dw3 -> 128x250
 
         db2 = so-y
         db2 = db2.mean(axis=0) # db2 -> 1x250 olmalı ama 50 x 250, avg aldım, emin değilim.
+
+        w3 = self.network[3]
+        a = np.dot(so-y,w3.T) # a -> nx128
+        a = dsigmoid(a)
+        dw2 = np.dot(e.T,a)
+
+        print(e.shape)
+        print(dw2.shape)
 
         return
 
@@ -190,9 +202,9 @@ def main():
     input_batch = converted_train_inputs[0:50]
     target_batch = converted_train_targets[0:50]
 
-    average_loss, total_loss, guesses, f_h_batch, s_o_batch = network.forward_propagation_batch(50, input_batch, target_batch)
+    average_loss, total_loss, guesses, f_h_batch, s_o_batch, e_batch = network.forward_propagation_batch(50, input_batch, target_batch)
 
-    network.backprop(target_batch, f_h_batch, s_o_batch)
+    network.backprop(target_batch, f_h_batch, s_o_batch, e_batch)
 
 if __name__ == '__main__':
     main()
