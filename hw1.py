@@ -1,6 +1,7 @@
 import numpy as np
 from random import seed
 from random import random
+from matplotlib import pyplot as plt
 
 class NeuralNetwork:
     def __init__(self):
@@ -85,9 +86,6 @@ class NeuralNetwork:
         average_loss = np.average(losses)
         total_loss = np.sum(losses)
 
-        print("\nAverage loss over batch:", np.round(average_loss, decimals=2))
-        print("\nTotal loss over batch:", np.round(total_loss, decimals=2))
-
         return average_loss, total_loss, guesses, f_h_batch, s_o_batch, e_batch
 
     # Calculate gradients:
@@ -117,19 +115,57 @@ class NeuralNetwork:
         db1 = db1.mean(axis=0)  # db1 -> 1x128 olmalı ama n x 128, avg aldım, emin değilim.
 
         w2 = self.network[1]
-        print(w2.shape)
         w2_split = np.split(w2, 3)
         w21 = w2_split[0]
         w22 = w2_split[1]
         w23 = w2_split[2] # All (w21 w22 w23) -> 16x128
 
-        y = np.dot(a,w21.T) # nx16
+        y1 = np.dot(a,w21.T) # nx16
+        y2 = np.dot(a,w22.T) # nx16
+        y3 = np.dot(a,w23.T) # nx16
 
         # TODO: make input batch into shape 250x3xn
         # TODO: then divide into 3, 250xn each
         # TODO: then calculate dw3
 
-        return
+        batch_size = len(input_batch)
+        x1 = []
+        x2 = []
+        x3 = []
+
+        for i in range(batch_size):
+            x1.append(input_batch[i][0])
+            x2.append(input_batch[i][1])
+            x3.append(input_batch[i][2])
+
+        x1 = np.array(x1)
+        x1 = np.squeeze(x1) # x1 -> nx250
+        x2 = np.array(x2)
+        x2 = np.squeeze(x2)  # x2 -> nx250
+        x3 = np.array(x3)
+        x3 = np.squeeze(x3)  # x3 -> nx250
+
+        r1 = np.dot(x1.T,y1) # 250x16
+        r2 = np.dot(x2.T,y2) # 250x16
+        r3 = np.dot(x3.T,y3) # 250x16
+
+        dw1 = r1+r2+r3 # dw1 -> 250x16
+
+        return dw3, db2, dw2, db1, dw1
+
+    def update(self, dw3, db2, dw2, db1, dw1, learning_rate):
+        # network[0] = w1 -> (250,16)
+        # network[1] = w2 -> (48,128)
+        # network[2] = b1 -> (1, 128)
+        # network[3] = w3 -> (128,250)
+        # network[4] = b2 -> (1, 250)
+
+        #self.network[0] += learning_rate * dw1
+        self.network[1] -= learning_rate * dw2
+        self.network[2] -= learning_rate * db1
+        self.network[3] -= learning_rate * dw3
+        self.network[4] -= learning_rate * db2
+
 
 def cross_entropy_loss(y, yHat):
    # ref: http://www.adeveloperdiary.com/data-science/deep-learning/neural-network-with-softmax-in-python/
@@ -212,12 +248,34 @@ def main():
     network = NeuralNetwork()
 
     # Example batch size = 5
-    input_batch = converted_train_inputs[0:50]
-    target_batch = converted_train_targets[0:50]
+    #input_batch = converted_train_inputs[0:500]
+    #target_batch = converted_train_targets[0:500]
 
-    average_loss, total_loss, guesses, f_h_batch, s_o_batch, e_batch = network.forward_propagation_batch(50, input_batch, target_batch)
+    learning_rate = 0.05
+    batch_size = 500
 
-    network.backprop(input_batch, target_batch, f_h_batch, s_o_batch, e_batch)
+    train_length = len(train_inputs)
+    total_batch_number = train_length/batch_size
+
+    all_loss = []
+
+    for i in range(400):
+        input_batch = converted_train_inputs[i*batch_size:i*batch_size+batch_size]
+        target_batch = converted_train_targets[i * batch_size:i * batch_size + batch_size]
+
+        average_loss, total_loss, guesses, f_h_batch, s_o_batch, e_batch = network.forward_propagation_batch(batch_size, input_batch, target_batch)
+        dw3, db2, dw2, db1, dw1 = network.backprop(input_batch, target_batch, f_h_batch, s_o_batch, e_batch)
+        network.update(dw3, db2, dw2, db1, dw1, learning_rate)
+
+        all_loss.append(total_loss)
+
+        if i%10 == 0:
+            print("\nAverage loss over batch:", np.round(average_loss, decimals=2))
+            print("\nTotal loss over batch:", np.round(total_loss, decimals=2))
+
+
+    plt.plot(all_loss)
+    plt.show()
 
 if __name__ == '__main__':
     main()
