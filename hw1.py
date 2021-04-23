@@ -122,11 +122,18 @@ def forward_propagation(network, row, y):
 
     return loss, guess
 
-def forward_propagation_batch(input_batch, target_batch):
+def forward_propagation_batch(network, batch_size, input_batch, target_batch):
 
+    losses = [] # batch size times loss
+    guesses = []
 
+    for i in range(batch_size):
+        loss, guess = forward_propagation(network, input_batch[i], target_batch[i])
+        losses.append(loss)
+        guesses.append(guess)
 
-    print("Accuracy:", 0)
+    print("\nAverage loss over batch:", np.round(np.average(losses), decimals=2))
+
 
 def main():
 
@@ -146,10 +153,12 @@ def main():
 
     loss, guess = forward_propagation(network,converted_train_inputs[0],converted_train_targets[0])
 
+    # Example batch size = 5
+
     input_batch = converted_train_inputs[0:5]
     target_batch = converted_train_targets[0:5]
 
-    #print(input_batch)
+    forward_propagation_batch(network, 5, input_batch, target_batch)
 
 if __name__ == '__main__':
     main()
