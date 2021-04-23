@@ -3,6 +3,7 @@ from random import seed
 from random import random
 
 def cross_entropy_loss(y, yHat):
+   # ref: http://www.adeveloperdiary.com/data-science/deep-learning/neural-network-with-softmax-in-python/
   return -np.sum(y * np.log(yHat))
 
 def softmax(x):
@@ -122,6 +123,7 @@ def forward_propagation(network, row, y):
 
     return loss, guess
 
+# Forward propagate batch:
 def forward_propagation_batch(network, batch_size, input_batch, target_batch):
 
     losses = [] # batch size times loss
@@ -132,7 +134,14 @@ def forward_propagation_batch(network, batch_size, input_batch, target_batch):
         losses.append(loss)
         guesses.append(guess)
 
-    print("\nAverage loss over batch:", np.round(np.average(losses), decimals=2))
+    average_loss = np.average(losses)
+    total_loss = np.sum(losses)
+
+    print("\nAverage loss over batch:", np.round(average_loss, decimals=2))
+    print("\nTotal loss over batch:", np.round(total_loss, decimals=2))
+
+    return average_loss, total_loss
+
 
 
 def main():
@@ -151,14 +160,11 @@ def main():
     # network[4] = b2 -> (1, 250)
     network = initialize_network()
 
-    loss, guess = forward_propagation(network,converted_train_inputs[0],converted_train_targets[0])
-
     # Example batch size = 5
-
     input_batch = converted_train_inputs[0:5]
     target_batch = converted_train_targets[0:5]
 
-    forward_propagation_batch(network, 5, input_batch, target_batch)
+    average_loss, total_loss= forward_propagation_batch(network, 5, input_batch, target_batch)
 
 if __name__ == '__main__':
     main()
