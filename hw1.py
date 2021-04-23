@@ -40,41 +40,45 @@ class NeuralNetwork:
         h = h + self.network[2]  # OK -> 1x128
 
         # 3. Sigmoid Activation
-        self.f_h = sigmoid(h)  # OK(?) -> 1x128
+        f_h = sigmoid(h)  # OK(?) -> 1x128
 
         # 4. Output layer
-        o = self.f_h @ self.network[3]  # OK -> 1x250
+        o = f_h @ self.network[3]  # OK -> 1x250
         o = o + self.network[4]  # OK -> 1x250
 
         # 5. Softmax
-        self.s_o = softmax(o)  # OK(?) -> 1x250
+        s_o = softmax(o)  # OK(?) -> 1x250
 
         # 6. Cross Entropy Loss
-        loss = cross_entropy_loss(y, self.s_o)
+        loss = cross_entropy_loss(y, s_o)
 
         # Optional: Get one hot encoding of prediction
-        guess = np.zeros_like(self.s_o)
-        max = self.s_o[0][0]
+        guess = np.zeros_like(s_o)
+        max = s_o[0][0]
         max_index = 0
 
         for i in range(250):
-            if self.s_o[0][i] > max:
-                max = self.s_o[0][i]
+            if s_o[0][i] > max:
+                max = s_o[0][i]
                 max_index = i
         guess[0][max_index] = 1
 
-        return loss, guess
+        return loss, guess, f_h, s_o
 
     # Forward propagate batch:
     def forward_propagation_batch(self, batch_size, input_batch, target_batch):
 
         losses = []  # batch size times loss
         guesses = []
+        f_h_batch = [] # hidden layer
+        s_o_batch =[] # output layer
 
         for i in range(batch_size):
-            loss, guess = self.forward_propagation(input_batch[i], target_batch[i])
+            loss, guess, f_h, s_o = self.forward_propagation(input_batch[i], target_batch[i])
             losses.append(loss)
             guesses.append(guess)
+            f_h_batch.append(f_h)
+            s_o_batch.append(s_o)
 
         average_loss = np.average(losses)
         total_loss = np.sum(losses)
@@ -82,16 +86,23 @@ class NeuralNetwork:
         print("\nAverage loss over batch:", np.round(average_loss, decimals=2))
         print("\nTotal loss over batch:", np.round(total_loss, decimals=2))
 
-        return average_loss, total_loss, guesses
+        return average_loss, total_loss, guesses, f_h_batch, s_o_batch
 
     # Calculate gradients:
-    def backprop(network, guesses, target_batch):
+    def backprop(self, target_batch, f_h_batch, s_o_batch):
 
         # Return dw3, db2, dw2, db1, dw1
 
-        so = np.array(guesses)
+        so = np.array(s_o_batch)
         so = np.squeeze(so)  # so -> nx250
         y = np.array(target_batch)  # y -> nx250
+        fh = np.array(f_h_batch)
+        fh = np.squeeze(fh) # fh -> nx128
+
+        dw3 = np.dot(fh.T, so-y) # dw3 -> 128x250
+
+        db2 = so-y
+        db2 = db2.mean(axis=0) # db2 -> 1x250 olmalı ama 50 x 250, avg aldım, emin değilim.
 
         return
 
@@ -179,9 +190,9 @@ def main():
     input_batch = converted_train_inputs[0:50]
     target_batch = converted_train_targets[0:50]
 
-    average_loss, total_loss, guesses = network.forward_propagation_batch(50, input_batch, target_batch)
+    average_loss, total_loss, guesses, f_h_batch, s_o_batch = network.forward_propagation_batch(50, input_batch, target_batch)
 
-    network.backprop(guesses, target_batch)
+    network.backprop(target_batch, f_h_batch, s_o_batch)
 
 if __name__ == '__main__':
     main()
