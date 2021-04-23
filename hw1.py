@@ -91,7 +91,7 @@ class NeuralNetwork:
         return average_loss, total_loss, guesses, f_h_batch, s_o_batch, e_batch
 
     # Calculate gradients:
-    def backprop(self, target_batch, f_h_batch, s_o_batch, e_batch):
+    def backprop(self, input_batch, target_batch, f_h_batch, s_o_batch, e_batch):
 
         # Return dw3, db2, dw2, db1, dw1
 
@@ -106,15 +106,28 @@ class NeuralNetwork:
         dw3 = np.dot(fh.T, so-y) # dw3 -> 128x250
 
         db2 = so-y
-        db2 = db2.mean(axis=0) # db2 -> 1x250 olmalı ama 50 x 250, avg aldım, emin değilim.
+        db2 = db2.mean(axis=0) # db2 -> 1x250 olmalı ama n x 250, avg aldım, emin değilim.
 
         w3 = self.network[3]
         a = np.dot(so-y,w3.T) # a -> nx128
         a = dsigmoid(a)
         dw2 = np.dot(e.T,a)
 
-        print(e.shape)
-        print(dw2.shape)
+        db1 = a
+        db1 = db1.mean(axis=0)  # db1 -> 1x128 olmalı ama n x 128, avg aldım, emin değilim.
+
+        w2 = self.network[1]
+        print(w2.shape)
+        w2_split = np.split(w2, 3)
+        w21 = w2_split[0]
+        w22 = w2_split[1]
+        w23 = w2_split[2] # All (w21 w22 w23) -> 16x128
+
+        y = np.dot(a,w21.T) # nx16
+
+        # TODO: make input batch into shape 250x3xn
+        # TODO: then divide into 3, 250xn each
+        # TODO: then calculate dw3
 
         return
 
@@ -204,7 +217,7 @@ def main():
 
     average_loss, total_loss, guesses, f_h_batch, s_o_batch, e_batch = network.forward_propagation_batch(50, input_batch, target_batch)
 
-    network.backprop(target_batch, f_h_batch, s_o_batch, e_batch)
+    network.backprop(input_batch, target_batch, f_h_batch, s_o_batch, e_batch)
 
 if __name__ == '__main__':
     main()
