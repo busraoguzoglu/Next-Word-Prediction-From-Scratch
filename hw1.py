@@ -23,10 +23,13 @@ def convert_one_hot(word_index):
     one_hot_representation[word_index] = 1
     return one_hot_representation
 
-def convert_one_hot_all(train_inputs):
+def convert_one_hot_all_training(train_inputs, train_targets):
     # Convert train inputs into one hot representation
     converted_train_inputs = []
+    converted_train_targets = []
+
     for i in range(len(train_inputs)):
+
         converted_row = []
         converted1 = convert_one_hot(train_inputs[i][0])
         converted2 = convert_one_hot(train_inputs[i][1])
@@ -35,7 +38,11 @@ def convert_one_hot_all(train_inputs):
         converted_row.append(converted2)
         converted_row.append(converted3)
         converted_train_inputs.append(converted_row)
-    return converted_train_inputs
+
+        converted_target = convert_one_hot(train_targets[i])
+        converted_train_targets.append(converted_target)
+
+    return converted_train_inputs, converted_train_targets
 
 def load_files():
     train_file = 'data/train_inputs.npy'
@@ -71,9 +78,10 @@ def initialize_network():
     return network
 
 # Forward propagate one row:
-def forward_propagation(network, row):
+def forward_propagation(network, row, y):
 
-    #row = [1x250, 1x250, 1x250] one input -> x1,x2,x3
+    # row = [1x250, 1x250, 1x250] one input -> x1,x2,x3
+    # y is real y for that row
 
     # 1. Embedding Layer
     e1 = row[0]@network[0] # OK -> 1x16
@@ -98,7 +106,9 @@ def forward_propagation(network, row):
     # 5. Softmax
     s_o = softmax(o) # OK(?) -> 1x250
 
-    return s_o
+    # 6. Cross Entropy Loss
+    loss = cross_entropy_loss(y, s_o)
+    print(loss)
 
 def main():
 
@@ -106,7 +116,7 @@ def main():
     train_inputs, train_targets, test_inputs, test_targets, valid_inputs, valid_targets, vocab = load_files()
 
     # Convert train inputs into one hot representation
-    converted_train_inputs = convert_one_hot_all(train_inputs)
+    converted_train_inputs, converted_train_targets = convert_one_hot_all_training(train_inputs, train_targets)
 
     # Define the network:
     # network[0] = w1 -> (250,16)
@@ -116,7 +126,7 @@ def main():
     # network[4] = b2 -> (1, 250)
     network = initialize_network()
 
-    forward_propagation(network,converted_train_inputs[0])
+    forward_propagation(network,converted_train_inputs[0],converted_train_targets[0])
 
 if __name__ == '__main__':
     main()
