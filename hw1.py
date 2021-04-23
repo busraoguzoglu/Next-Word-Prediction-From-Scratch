@@ -2,6 +2,99 @@ import numpy as np
 from random import seed
 from random import random
 
+class NeuralNetwork:
+    def __init__(self):
+
+        # Initialize the network
+        network = list()
+        embedding_layer_w1 = np.random.rand(250, 16)
+        network.append(embedding_layer_w1)
+        hidden_layer_w2 = np.random.rand(48, 128)
+        network.append(hidden_layer_w2)
+        hidden_layer_b1 = np.random.rand(1, 128)
+        network.append(hidden_layer_b1)
+        output_layer_w3 = np.random.rand(128, 250)
+        network.append(output_layer_w3)
+        output_layer_b2 = np.random.rand(1, 250)
+        network.append(output_layer_b2)
+
+        self.network = network
+
+    # Forward propagate one row:
+    def forward_propagation(self, row, y):
+
+        # row = [1x250, 1x250, 1x250] one input -> x1,x2,x3
+        # y is real y for that row
+
+        # 1. Embedding Layer
+        e1 = row[0] @ self.network[0]  # OK -> 1x16
+        e2 = row[1] @ self.network[0]  # OK -> 1x16
+        e3 = row[2] @ self.network[0]  # OK -> 1x16
+
+        e = np.concatenate([e1, e2, e3])
+        e = np.reshape(e, (-1, 48))  # OK -> 1x48
+
+        # 2. Hidden Layer
+        h = e @ self.network[1]
+        h = np.reshape(h, (-1, 128))  # OK -> 1x128
+        h = h + self.network[2]  # OK -> 1x128
+
+        # 3. Sigmoid Activation
+        self.f_h = sigmoid(h)  # OK(?) -> 1x128
+
+        # 4. Output layer
+        o = self.f_h @ self.network[3]  # OK -> 1x250
+        o = o + self.network[4]  # OK -> 1x250
+
+        # 5. Softmax
+        self.s_o = softmax(o)  # OK(?) -> 1x250
+
+        # 6. Cross Entropy Loss
+        loss = cross_entropy_loss(y, self.s_o)
+
+        # Optional: Get one hot encoding of prediction
+        guess = np.zeros_like(self.s_o)
+        max = self.s_o[0][0]
+        max_index = 0
+
+        for i in range(250):
+            if self.s_o[0][i] > max:
+                max = self.s_o[0][i]
+                max_index = i
+        guess[0][max_index] = 1
+
+        return loss, guess
+
+    # Forward propagate batch:
+    def forward_propagation_batch(self, batch_size, input_batch, target_batch):
+
+        losses = []  # batch size times loss
+        guesses = []
+
+        for i in range(batch_size):
+            loss, guess = self.forward_propagation(input_batch[i], target_batch[i])
+            losses.append(loss)
+            guesses.append(guess)
+
+        average_loss = np.average(losses)
+        total_loss = np.sum(losses)
+
+        print("\nAverage loss over batch:", np.round(average_loss, decimals=2))
+        print("\nTotal loss over batch:", np.round(total_loss, decimals=2))
+
+        return average_loss, total_loss, guesses
+
+    # Calculate gradients:
+    def backprop(network, guesses, target_batch):
+
+        # Return dw3, db2, dw2, db1, dw1
+
+        so = np.array(guesses)
+        so = np.squeeze(so)  # so -> nx250
+        y = np.array(target_batch)  # y -> nx250
+
+        return
+
 def cross_entropy_loss(y, yHat):
    # ref: http://www.adeveloperdiary.com/data-science/deep-learning/neural-network-with-softmax-in-python/
   return -np.sum(y * np.log(yHat))
@@ -64,84 +157,6 @@ def load_files():
 
     return train_inputs, train_targets, test_inputs, test_targets,valid_inputs, valid_targets, vocab
 
-def initialize_network():
-    network = list()
-    embedding_layer_w1 = np.random.rand(250,16)
-    network.append(embedding_layer_w1)
-    hidden_layer_w2 = np.random.rand(48,128)
-    network.append(hidden_layer_w2)
-    hidden_layer_b1 = np.random.rand(1, 128)
-    network.append(hidden_layer_b1)
-    output_layer_w3 = np.random.rand(128,250)
-    network.append(output_layer_w3)
-    output_layer_b2 = np.random.rand(1, 250)
-    network.append(output_layer_b2)
-    return network
-
-# Forward propagate one row:
-def forward_propagation(network, row, y):
-
-    # row = [1x250, 1x250, 1x250] one input -> x1,x2,x3
-    # y is real y for that row
-
-    # 1. Embedding Layer
-    e1 = row[0]@network[0] # OK -> 1x16
-    e2 = row[1]@network[0] # OK -> 1x16
-    e3 = row[2]@network[0] # OK -> 1x16
-
-    e = np.concatenate([e1,e2,e3])
-    e = np.reshape(e, (-1, 48)) # OK -> 1x48
-
-    # 2. Hidden Layer
-    h = e@network[1]
-    h = np.reshape(h, (-1, 128)) # OK -> 1x128
-    h = h + network[2] # OK -> 1x128
-
-    # 3. Sigmoid Activation
-    f_h = sigmoid(h) # OK(?) -> 1x128
-
-    # 4. Output layer
-    o = f_h@network[3] # OK -> 1x250
-    o = o + network[4] # OK -> 1x250
-
-    # 5. Softmax
-    s_o = softmax(o) # OK(?) -> 1x250
-
-    # 6. Cross Entropy Loss
-    loss = cross_entropy_loss(y, s_o)
-
-    # Optional: Get one hot encoding of prediction
-    guess = np.zeros_like(s_o)
-    max = s_o[0][0]
-    max_index = 0
-
-    for i in range(250):
-        if s_o[0][i] > max:
-            max = s_o[0][i]
-            max_index = i
-    guess[0][max_index] = 1
-
-    return loss, guess
-
-# Forward propagate batch:
-def forward_propagation_batch(network, batch_size, input_batch, target_batch):
-
-    losses = [] # batch size times loss
-    guesses = []
-
-    for i in range(batch_size):
-        loss, guess = forward_propagation(network, input_batch[i], target_batch[i])
-        losses.append(loss)
-        guesses.append(guess)
-
-    average_loss = np.average(losses)
-    total_loss = np.sum(losses)
-
-    print("\nAverage loss over batch:", np.round(average_loss, decimals=2))
-    print("\nTotal loss over batch:", np.round(total_loss, decimals=2))
-
-    return average_loss, total_loss
-
 
 
 def main():
@@ -158,13 +173,15 @@ def main():
     # network[2] = b1 -> (1, 128)
     # network[3] = w3 -> (128,250)
     # network[4] = b2 -> (1, 250)
-    network = initialize_network()
+    network = NeuralNetwork()
 
     # Example batch size = 5
-    input_batch = converted_train_inputs[0:5]
-    target_batch = converted_train_targets[0:5]
+    input_batch = converted_train_inputs[0:50]
+    target_batch = converted_train_targets[0:50]
 
-    average_loss, total_loss= forward_propagation_batch(network, 5, input_batch, target_batch)
+    average_loss, total_loss, guesses = network.forward_propagation_batch(50, input_batch, target_batch)
+
+    network.backprop(guesses, target_batch)
 
 if __name__ == '__main__':
     main()
