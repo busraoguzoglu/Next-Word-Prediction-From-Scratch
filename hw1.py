@@ -9,14 +9,23 @@ class NeuralNetwork:
         # Initialize the network
         network = list()
         embedding_layer_w1 = np.random.rand(250, 16)
+        #embedding_layer_w1 = np.random.uniform(low=0, high=0.01, size=(250, 16))
         network.append(embedding_layer_w1)
+
         hidden_layer_w2 = np.random.rand(48, 128)
+        #hidden_layer_w2 = np.random.uniform(low=0, high=0.01, size=(48, 128))
         network.append(hidden_layer_w2)
-        hidden_layer_b1 = np.random.rand(1, 128)
+
+        #hidden_layer_b1 = np.random.rand(1, 128)
+        hidden_layer_b1 = np.random.uniform(low=0, high=0.5, size=(1, 128))
         network.append(hidden_layer_b1)
+
         output_layer_w3 = np.random.rand(128, 250)
+        #output_layer_w3 = np.random.uniform(low=0, high=0.01, size=(128, 250))
         network.append(output_layer_w3)
-        output_layer_b2 = np.random.rand(1, 250)
+
+        #output_layer_b2 = np.random.rand(1, 250)
+        output_layer_b2 = np.random.uniform(low=0, high=0.5, size=(1, 250))
         network.append(output_layer_b2)
 
         self.network = network
@@ -166,6 +175,71 @@ class NeuralNetwork:
         self.network[3] -= learning_rate * dw3
         self.network[4] -= learning_rate * db2
 
+    def train(self, converted_train_inputs, converted_train_targets):
+
+        learning_rate = 0.01
+        batch_size = 50
+        epochs = 1000
+
+        train_length = len(converted_train_inputs)
+        total_batch_number = train_length / batch_size
+
+        all_loss = []
+        all_accuracy = []
+
+        # Training loop
+
+        for i in range(epochs):
+            batch_accuracy_list = []
+
+            for i in range(5):
+                input_batch = converted_train_inputs[i * batch_size:i * batch_size + batch_size]
+                target_batch = converted_train_targets[i * batch_size:i * batch_size + batch_size]
+
+                average_loss, total_loss, guesses, f_h_batch, s_o_batch, e_batch = self.forward_propagation_batch(
+                    batch_size, input_batch, target_batch)
+                dw3, db2, dw2, db1, dw1 = self.backprop(input_batch, target_batch, f_h_batch, s_o_batch, e_batch)
+                self.update(dw3, db2, dw2, db1, dw1, learning_rate)
+
+                batch_accuracy = self.calculate_training_accuracy(guesses,target_batch)
+                all_loss.append(total_loss)
+                batch_accuracy_list.append(batch_accuracy)
+
+                if i % 10 == 0:
+                    print("\nAverage loss over batch:", np.round(average_loss, decimals=2))
+                    print("\nTotal loss over batch:", np.round(total_loss, decimals=2))
+                    print("\nAccuracy over batch:", np.round(batch_accuracy, decimals=2))
+
+            #train_accuracy_sum = 0
+            #for i in range(len(batch_accuracy_list)):
+            #    train_accuracy_sum+=batch_accuracy_list[i]
+
+            #avg_train_accuracy = train_accuracy_sum / len(batch_accuracy_list)
+            #print("\nAverage train accuracy of epoch:", np.round(avg_train_accuracy, decimals=2))
+
+        plt.plot(all_loss)
+        plt.show()
+
+        plt.plot(all_accuracy)
+        plt.show()
+
+    def calculate_training_accuracy(self, guesses, train_targets):
+        batch_size = len(train_targets)
+        true_count = 0
+
+        guesses = np.array(guesses)
+        guesses = np.squeeze(guesses)
+
+        for i in range(batch_size):
+            guess_index = convert_one_hot_to_index(guesses[i])
+            train_index = convert_one_hot_to_index(train_targets[i])
+            #print(guess_index)
+            #print(train_index)
+            if guess_index == train_index:
+                true_count+=1
+
+        accuracy = true_count/batch_size
+        return accuracy
 
 def cross_entropy_loss(y, yHat):
    # ref: http://www.adeveloperdiary.com/data-science/deep-learning/neural-network-with-softmax-in-python/
@@ -183,6 +257,13 @@ def sigmoid(x):
 
 def dsigmoid(x): # Derivative of sigmoid
   return sigmoid(x) * (1 - sigmoid(x))
+
+def convert_one_hot_to_index(one_hot_vector):
+    index = 0
+    for i in range(len(one_hot_vector)):
+        if one_hot_vector[i] == 1:
+            index = i
+    return index
 
 def convert_one_hot(word_index):
     one_hot_representation = np.zeros(250)
@@ -247,38 +328,9 @@ def main():
     # network[4] = b2 -> (1, 250)
     network = NeuralNetwork()
 
-    # Example batch size = 5
-    #input_batch = converted_train_inputs[0:500]
-    #target_batch = converted_train_targets[0:500]
-
-    learning_rate = 0.005
-    batch_size = 25
-
-    train_length = len(train_inputs)
-    total_batch_number = train_length/batch_size
-
-    all_loss = []
-
-    for i in range(7500):
-        #input_batch = converted_train_inputs[i*batch_size:i*batch_size+batch_size]
-        #target_batch = converted_train_targets[i * batch_size:i * batch_size + batch_size]
-
-        input_batch = converted_train_inputs[0:25]
-        target_batch = converted_train_targets[0:25]
-
-        average_loss, total_loss, guesses, f_h_batch, s_o_batch, e_batch = network.forward_propagation_batch(batch_size, input_batch, target_batch)
-        dw3, db2, dw2, db1, dw1 = network.backprop(input_batch, target_batch, f_h_batch, s_o_batch, e_batch)
-        network.update(dw3, db2, dw2, db1, dw1, learning_rate)
-
-        all_loss.append(total_loss)
-
-        if i%10 == 0:
-            print("\nAverage loss over batch:", np.round(average_loss, decimals=2))
-            print("\nTotal loss over batch:", np.round(total_loss, decimals=2))
+    network.train(converted_train_inputs,converted_train_targets)
 
 
-    plt.plot(all_loss)
-    plt.show()
 
 if __name__ == '__main__':
     main()
