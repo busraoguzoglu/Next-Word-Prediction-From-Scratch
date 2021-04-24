@@ -329,16 +329,20 @@ def load_files():
 def tsne_visualization():
 
     embedding = np.load('embeddings.npy')
+
+    # TODO: Scale embeddings into certain range,
+    # TODO: Add vocab names to plot
+
     X = np.array(embedding[0:3])
 
     X = np.array([[-1.89947302, -1.71278179, -2.01633414, -1.89693931],
                   [-9.18220909, -8.27972830, -9.74712541, -9.16996093],
                   [-2.36182356, -2.12968984, -2.50712985, -2.35867313]])
-    print(np.round(X, decimals=1))
+    X_rounded = np.round(X, decimals=1)
 
-    results = TSNE(n_components=2).fit_transform(X)
-    #tsne_results = pd.DataFrame(tsne_results, columns=['tsne1', 'tsne2'])
-    #plt.scatter(tsne_results['tsne1'], tsne_results['tsne2'])
+    results = TSNE(n_components=2).fit_transform(X_rounded)
+    tsne_results = pd.DataFrame(results, columns=['tsne1', 'tsne2'])
+    plt.scatter(tsne_results['tsne1'], tsne_results['tsne2'])
     plt.show()
 
 def main():
@@ -357,8 +361,8 @@ def main():
     # network[4] = b2 -> (1, 250)
     network = NeuralNetwork()
 
-    network.train(converted_train_inputs,converted_train_targets)
-    #tsne_visualization()
+    #network.train(converted_train_inputs,converted_train_targets)
+    tsne_visualization()
 
 if __name__ == '__main__':
     main()
