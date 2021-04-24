@@ -2,6 +2,8 @@ import numpy as np
 from random import seed
 from random import random
 from matplotlib import pyplot as plt
+from sklearn.manifold import TSNE
+import pandas as pd
 
 class NeuralNetwork:
     def __init__(self):
@@ -9,23 +11,23 @@ class NeuralNetwork:
         # Initialize the network
         network = list()
         embedding_layer_w1 = np.random.rand(250, 16)
-        #embedding_layer_w1 = np.random.uniform(low=0, high=0.01, size=(250, 16))
+        #embedding_layer_w1 = np.random.uniform(low=0, high=0.1, size=(250, 16))
         network.append(embedding_layer_w1)
 
         hidden_layer_w2 = np.random.rand(48, 128)
-        #hidden_layer_w2 = np.random.uniform(low=0, high=0.01, size=(48, 128))
+        #hidden_layer_w2 = np.random.uniform(low=0, high=0.1, size=(48, 128))
         network.append(hidden_layer_w2)
 
-        #hidden_layer_b1 = np.random.rand(1, 128)
-        hidden_layer_b1 = np.random.uniform(low=0, high=0.5, size=(1, 128))
+        hidden_layer_b1 = np.random.rand(1, 128)
+        #hidden_layer_b1 = np.random.uniform(low=0, high=0.01, size=(1, 128))
         network.append(hidden_layer_b1)
 
         output_layer_w3 = np.random.rand(128, 250)
-        #output_layer_w3 = np.random.uniform(low=0, high=0.01, size=(128, 250))
+        #output_layer_w3 = np.random.uniform(low=0, high=0.1, size=(128, 250))
         network.append(output_layer_w3)
 
-        #output_layer_b2 = np.random.rand(1, 250)
-        output_layer_b2 = np.random.uniform(low=0, high=0.5, size=(1, 250))
+        output_layer_b2 = np.random.rand(1, 250)
+        #output_layer_b2 = np.random.uniform(low=0, high=0.01, size=(1, 250))
         network.append(output_layer_b2)
 
         self.network = network
@@ -177,51 +179,65 @@ class NeuralNetwork:
 
     def train(self, converted_train_inputs, converted_train_targets):
 
-        learning_rate = 0.01
-        batch_size = 50
-        epochs = 1000
+        learning_rate = 0.001
+        batch_size = 25
+        epochs = 20
 
         train_length = len(converted_train_inputs)
         total_batch_number = train_length / batch_size
 
-        all_loss = []
-        all_accuracy = []
+        epoch_total_losses = []
+        epoch_average_losses = []
+        epoch_accuracies = []
 
         # Training loop
 
-        for i in range(epochs):
-            batch_accuracy_list = []
+        for e in range(epochs):
+            #if e >= 15:
+            #    learning_rate = learning_rate/10
+            #if e >= 15:
+            #    learning_rate = learning_rate/15
+            batch_total_losses = []
+            batch_average_losses = []
+            batch_accuracies = []
 
-            for i in range(5):
-                input_batch = converted_train_inputs[i * batch_size:i * batch_size + batch_size]
-                target_batch = converted_train_targets[i * batch_size:i * batch_size + batch_size]
+            for b in range(1200):
+                input_batch = converted_train_inputs[b * batch_size:b * batch_size + batch_size]
+                target_batch = converted_train_targets[b * batch_size:b * batch_size + batch_size]
 
                 average_loss, total_loss, guesses, f_h_batch, s_o_batch, e_batch = self.forward_propagation_batch(
                     batch_size, input_batch, target_batch)
                 dw3, db2, dw2, db1, dw1 = self.backprop(input_batch, target_batch, f_h_batch, s_o_batch, e_batch)
                 self.update(dw3, db2, dw2, db1, dw1, learning_rate)
 
-                batch_accuracy = self.calculate_training_accuracy(guesses,target_batch)
-                all_loss.append(total_loss)
-                batch_accuracy_list.append(batch_accuracy)
+                batch_accuracy = self.calculate_training_accuracy(guesses, target_batch)
 
-                if i % 10 == 0:
+                batch_total_losses.append(total_loss)
+                batch_average_losses.append(average_loss)
+                batch_accuracies.append(batch_accuracy)
+
+                if b % 10 == 0:
                     print("\nAverage loss over batch:", np.round(average_loss, decimals=2))
                     print("\nTotal loss over batch:", np.round(total_loss, decimals=2))
                     print("\nAccuracy over batch:", np.round(batch_accuracy, decimals=2))
 
-            #train_accuracy_sum = 0
-            #for i in range(len(batch_accuracy_list)):
-            #    train_accuracy_sum+=batch_accuracy_list[i]
+            batch_total_losses_avg = sum(batch_total_losses) / len(batch_total_losses)
+            batch_average_losses_avg = sum(batch_average_losses) / len(batch_average_losses)
+            batch_accuracies_avg = sum(batch_accuracies) / len(batch_accuracies)
 
-            #avg_train_accuracy = train_accuracy_sum / len(batch_accuracy_list)
-            #print("\nAverage train accuracy of epoch:", np.round(avg_train_accuracy, decimals=2))
+            epoch_total_losses.append(batch_total_losses_avg)
+            epoch_average_losses.append(batch_average_losses_avg)
+            epoch_accuracies.append(batch_accuracies_avg)
 
-        plt.plot(all_loss)
+        plt.plot(epoch_total_losses)
+        plt.show()
+        plt.plot(epoch_average_losses)
+        plt.show()
+        plt.plot(epoch_accuracies)
         plt.show()
 
-        plt.plot(all_accuracy)
-        plt.show()
+        # Save embeddings for tSNE
+        self.return_and_save_embeddings()
 
     def calculate_training_accuracy(self, guesses, train_targets):
         batch_size = len(train_targets)
@@ -240,6 +256,10 @@ class NeuralNetwork:
 
         accuracy = true_count/batch_size
         return accuracy
+
+    def return_and_save_embeddings(self):
+        np.save('embeddings.npy', self.network[0])
+        return self.network[0]
 
 def cross_entropy_loss(y, yHat):
    # ref: http://www.adeveloperdiary.com/data-science/deep-learning/neural-network-with-softmax-in-python/
@@ -310,7 +330,13 @@ def load_files():
 
     return train_inputs, train_targets, test_inputs, test_targets,valid_inputs, valid_targets, vocab
 
+def tsne_visualization():
 
+    embedding = np.load('embeddings.npy')
+    results = TSNE(n_components=2).fit_transform(embedding)
+    #tsne_results = pd.DataFrame(tsne_results, columns=['tsne1', 'tsne2'])
+    #plt.scatter(tsne_results['tsne1'], tsne_results['tsne2'])
+    plt.show()
 
 def main():
 
@@ -328,9 +354,8 @@ def main():
     # network[4] = b2 -> (1, 250)
     network = NeuralNetwork()
 
-    network.train(converted_train_inputs,converted_train_targets)
-
-
+    #network.train(converted_train_inputs,converted_train_targets)
+    #tsne_visualization()
 
 if __name__ == '__main__':
     main()
