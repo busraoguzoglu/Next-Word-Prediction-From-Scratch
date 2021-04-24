@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 from random import seed
 from random import random
@@ -10,24 +12,21 @@ class NeuralNetwork:
 
         # Initialize the network
         network = list()
-        embedding_layer_w1 = np.random.rand(250, 16)
-        #embedding_layer_w1 = np.random.uniform(low=0, high=0.1, size=(250, 16))
+
+        # Use Xavier Initialization
+        embedding_layer_w1 = np.random.rand(250, 16) / math.sqrt(250)
         network.append(embedding_layer_w1)
 
-        hidden_layer_w2 = np.random.rand(48, 128)
-        #hidden_layer_w2 = np.random.uniform(low=0, high=0.1, size=(48, 128))
+        hidden_layer_w2 = np.random.rand(48, 128) / math.sqrt(48)
         network.append(hidden_layer_w2)
 
-        hidden_layer_b1 = np.random.rand(1, 128)
-        #hidden_layer_b1 = np.random.uniform(low=0, high=0.01, size=(1, 128))
+        hidden_layer_b1 = np.zeros(128)
         network.append(hidden_layer_b1)
 
-        output_layer_w3 = np.random.rand(128, 250)
-        #output_layer_w3 = np.random.uniform(low=0, high=0.1, size=(128, 250))
+        output_layer_w3 = np.random.rand(128, 250) / math.sqrt(128)
         network.append(output_layer_w3)
 
-        output_layer_b2 = np.random.rand(1, 250)
-        #output_layer_b2 = np.random.uniform(low=0, high=0.01, size=(1, 250))
+        output_layer_b2 = np.zeros(250)
         network.append(output_layer_b2)
 
         self.network = network
@@ -112,18 +111,19 @@ class NeuralNetwork:
         e = np.array(e_batch)
         e = np.squeeze(e) # e -> nx48
 
-        dw3 = np.dot(fh.T, so-y) # dw3 -> 128x250
+        t = (so - y)
+        dw3 = np.dot(fh.T, t) # dw3 -> 128x250
 
-        db2 = so-y
-        db2 = db2.mean(axis=0) # db2 -> 1x250 olmalı ama n x 250, avg aldım, emin değilim.
+        db2 = t
+        db2 = db2.sum(axis=0) # db2 -> 1x250 olmalı ama n x 250, avg aldım, emin değilim.
 
         w3 = self.network[3]
-        a = np.dot(so-y,w3.T) # a -> nx128
+        a = np.dot(t,w3.T) # a -> nx128
         a = dsigmoid(a)
         dw2 = np.dot(e.T,a)
 
         db1 = a
-        db1 = db1.mean(axis=0)  # db1 -> 1x128 olmalı ama n x 128, avg aldım, emin değilim.
+        db1 = db1.sum(axis=0)  # db1 -> 1x128 olmalı ama n x 128, avg aldım, emin değilim.
 
         w2 = self.network[1]
         w2_split = np.split(w2, 3)
@@ -131,13 +131,9 @@ class NeuralNetwork:
         w22 = w2_split[1]
         w23 = w2_split[2] # All (w21 w22 w23) -> 16x128
 
-        y1 = np.dot(a,w21.T) # nx16
-        y2 = np.dot(a,w22.T) # nx16
-        y3 = np.dot(a,w23.T) # nx16
-
-        # TODO: make input batch into shape 250x3xn
-        # TODO: then divide into 3, 250xn each
-        # TODO: then calculate dw3
+        y1 = np.dot(a, w21.T) # nx16
+        y2 = np.dot(a, w22.T) # nx16
+        y3 = np.dot(a, w23.T) # nx16
 
         batch_size = len(input_batch)
         x1 = []
@@ -156,9 +152,9 @@ class NeuralNetwork:
         x3 = np.array(x3)
         x3 = np.squeeze(x3)  # x3 -> nx250
 
-        r1 = np.dot(x1.T,y1) # 250x16
-        r2 = np.dot(x2.T,y2) # 250x16
-        r3 = np.dot(x3.T,y3) # 250x16
+        r1 = np.dot(x1.T, y1) # 250x16
+        r2 = np.dot(x2.T, y2) # 250x16
+        r3 = np.dot(x3.T, y3) # 250x16
 
         dw1 = r1+r2+r3 # dw1 -> 250x16
 
@@ -333,7 +329,14 @@ def load_files():
 def tsne_visualization():
 
     embedding = np.load('embeddings.npy')
-    results = TSNE(n_components=2).fit_transform(embedding)
+    X = np.array(embedding[0:3])
+
+    X = np.array([[-1.89947302, -1.71278179, -2.01633414, -1.89693931],
+                  [-9.18220909, -8.27972830, -9.74712541, -9.16996093],
+                  [-2.36182356, -2.12968984, -2.50712985, -2.35867313]])
+    print(np.round(X, decimals=1))
+
+    results = TSNE(n_components=2).fit_transform(X)
     #tsne_results = pd.DataFrame(tsne_results, columns=['tsne1', 'tsne2'])
     #plt.scatter(tsne_results['tsne1'], tsne_results['tsne2'])
     plt.show()
@@ -354,7 +357,7 @@ def main():
     # network[4] = b2 -> (1, 250)
     network = NeuralNetwork()
 
-    #network.train(converted_train_inputs,converted_train_targets)
+    network.train(converted_train_inputs,converted_train_targets)
     #tsne_visualization()
 
 if __name__ == '__main__':
