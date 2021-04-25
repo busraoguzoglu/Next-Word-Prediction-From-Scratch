@@ -74,7 +74,7 @@ class NeuralNetwork:
                 max_index = i
         guess[0][max_index] = 1
 
-        return loss, guess, f_h, s_o, e
+        return loss, guess, f_h, s_o, e, o
 
     # Forward propagate batch:
     def forward_propagation_batch(self, batch_size, input_batch, target_batch):
@@ -84,22 +84,24 @@ class NeuralNetwork:
         f_h_batch = [] # hidden layer
         s_o_batch =[] # output layer
         e_batch = [] # embeddings for batch
+        o_batch = []
 
         for i in range(batch_size):
-            loss, guess, f_h, s_o, e = self.forward_propagation(input_batch[i], target_batch[i])
+            loss, guess, f_h, s_o, e, o = self.forward_propagation(input_batch[i], target_batch[i])
             losses.append(loss)
             guesses.append(guess)
             f_h_batch.append(f_h)
             s_o_batch.append(s_o)
             e_batch.append(e)
+            o_batch.append(o)
 
         average_loss = np.average(losses)
         total_loss = np.sum(losses)
 
-        return average_loss, total_loss, guesses, f_h_batch, s_o_batch, e_batch
+        return average_loss, total_loss, guesses, f_h_batch, s_o_batch, e_batch, o_batch
 
     # Calculate gradients:
-    def backprop(self, input_batch, target_batch, f_h_batch, s_o_batch, e_batch):
+    def backprop(self, input_batch, target_batch, f_h_batch, s_o_batch, e_batch, o_batch):
 
         # Return dw3, db2, dw2, db1, dw1
 
@@ -107,15 +109,24 @@ class NeuralNetwork:
         so = np.squeeze(so)  # so -> nx250
         y = np.array(target_batch)  # y -> nx250
         fh = np.array(f_h_batch)
-        fh = np.squeeze(fh) # fh -> nx128
+        fh = np.squeeze(fh)  # fh -> nx128
         e = np.array(e_batch)
-        e = np.squeeze(e) # e -> nx48
+        e = np.squeeze(e)  # e -> nx48
+        o = np.array(o_batch)
+        o = np.squeeze(o) # 0 -> nx250
+
+        print(o.shape)
+
+        dso = softmax_gradient(o, so) # Need to be nxn
+
+        print(dso.shape)
 
         t = (so - y)
+
         dw3 = np.dot(fh.T, t) # dw3 -> 128x250
 
         db2 = t
-        db2 = db2.sum(axis=0) # db2 -> 1x250 olmalı ama n x 250, avg aldım, emin değilim.
+        db2 = db2.sum(axis=0) # db2 -> 1x250 olmalı ama n x 250, sum aldım, emin değilim.
 
         w3 = self.network[3]
         a = np.dot(t,w3.T) # a -> nx128
@@ -123,7 +134,7 @@ class NeuralNetwork:
         dw2 = np.dot(e.T,a)
 
         db1 = a
-        db1 = db1.sum(axis=0)  # db1 -> 1x128 olmalı ama n x 128, avg aldım, emin değilim.
+        db1 = db1.sum(axis=0)  # db1 -> 1x128 olmalı ama n x 128, sum aldım, emin değilim.
 
         w2 = self.network[1]
         w2_split = np.split(w2, 3)
@@ -156,7 +167,7 @@ class NeuralNetwork:
         r2 = np.dot(x2.T, y2) # 250x16
         r3 = np.dot(x3.T, y3) # 250x16
 
-        dw1 = r1+r2+r3 # dw1 -> 250x16
+        dw1 = r1+r2+r3 / 3 # dw1 -> 250x16  # Avg aldım?
 
         return dw3, db2, dw2, db1, dw1
 
@@ -175,12 +186,14 @@ class NeuralNetwork:
 
     def train(self, converted_train_inputs, converted_train_targets):
 
-        learning_rate = 0.001
-        batch_size = 25
-        epochs = 20
+        learning_rate = 0.0001
+        batch_size = 1490 # 745 best
+        epochs = 10 # 5 best
 
         train_length = len(converted_train_inputs)
         total_batch_number = train_length / batch_size
+
+        print(train_length)
 
         epoch_total_losses = []
         epoch_average_losses = []
@@ -189,21 +202,21 @@ class NeuralNetwork:
         # Training loop
 
         for e in range(epochs):
-            #if e >= 15:
-            #    learning_rate = learning_rate/10
+            if e >= 5:
+                learning_rate = learning_rate/10
             #if e >= 15:
             #    learning_rate = learning_rate/15
             batch_total_losses = []
             batch_average_losses = []
             batch_accuracies = []
 
-            for b in range(1200):
+            for b in range(int(total_batch_number)):
                 input_batch = converted_train_inputs[b * batch_size:b * batch_size + batch_size]
                 target_batch = converted_train_targets[b * batch_size:b * batch_size + batch_size]
 
-                average_loss, total_loss, guesses, f_h_batch, s_o_batch, e_batch = self.forward_propagation_batch(
+                average_loss, total_loss, guesses, f_h_batch, s_o_batch, e_batch, o_batch = self.forward_propagation_batch(
                     batch_size, input_batch, target_batch)
-                dw3, db2, dw2, db1, dw1 = self.backprop(input_batch, target_batch, f_h_batch, s_o_batch, e_batch)
+                dw3, db2, dw2, db1, dw1 = self.backprop(input_batch, target_batch, f_h_batch, s_o_batch, e_batch, o_batch)
                 self.update(dw3, db2, dw2, db1, dw1, learning_rate)
 
                 batch_accuracy = self.calculate_training_accuracy(guesses, target_batch)
@@ -268,8 +281,27 @@ def softmax(x):
   y = np.exp(x - b)
   return y / y.sum()
 
+def softmax_gradient(z, Sz):
+    """Unvectorized computation of the gradient of softmax.
+    z: (T, 1) column array of input values.
+    Returns D (T, T) the Jacobian matrix of softmax(z) at the given z. D[i, j]
+    is DjSi - the partial derivative of Si w.r.t. input j.
+    """
+
+    #z -> o
+    #Sz -> so
+
+    #Sz = softmax(z)
+    N = z.shape[0]
+    D = np.zeros((N, N))
+    for i in range(N):
+        for j in range(N):
+            D[i, j] = Sz[i, 0] * (np.float32(i == j) - Sz[j, 0])
+    return D
+
 def sigmoid(x):
     return 1/(1+np.exp(-x))
+
 
 def dsigmoid(x): # Derivative of sigmoid
   return sigmoid(x) * (1 - sigmoid(x))
@@ -333,11 +365,12 @@ def tsne_visualization():
     # TODO: Scale embeddings into certain range,
     # TODO: Add vocab names to plot
 
-    X = np.array(embedding[0:3])
+    X = np.array(embedding)
+    print(X[0:3])
 
-    X = np.array([[-1.89947302, -1.71278179, -2.01633414, -1.89693931],
-                  [-9.18220909, -8.27972830, -9.74712541, -9.16996093],
-                  [-2.36182356, -2.12968984, -2.50712985, -2.35867313]])
+    #X = np.array([[-1.89947302, -1.71278179, -2.01633414, -1.89693931],
+    #              [-9.18220909, -8.27972830, -9.74712541, -9.16996093],
+    #              [-2.36182356, -2.12968984, -2.50712985, -2.35867313]])
     X_rounded = np.round(X, decimals=1)
 
     results = TSNE(n_components=2).fit_transform(X_rounded)
@@ -361,7 +394,7 @@ def main():
     # network[4] = b2 -> (1, 250)
     network = NeuralNetwork()
 
-    #network.train(converted_train_inputs,converted_train_targets)
+    network.train(converted_train_inputs,converted_train_targets)
     tsne_visualization()
 
 if __name__ == '__main__':
