@@ -115,22 +115,27 @@ class NeuralNetwork:
         o = np.array(o_batch)
         o = np.squeeze(o) # 0 -> nx250
 
-        print(o.shape)
-
         dso = softmax_gradient(o, so) # Need to be nxn
-
-        print(dso.shape)
 
         t = (so - y)
 
-        dw3 = np.dot(fh.T, t) # dw3 -> 128x250
+        dw3 = np.dot(fh.T, t) # dw3 -> 128x250 (V1)
+
+        #dw3 = np.dot(fh.T, dso)
+        #dw3 = np.dot(dw3, t)   V2
 
         db2 = t
         db2 = db2.sum(axis=0) # db2 -> 1x250 olmalı ama n x 250, sum aldım, emin değilim.
 
         w3 = self.network[3]
-        a = np.dot(t,w3.T) # a -> nx128
+
+        a = np.dot(t,w3.T) # a -> nx128 (V1)
         a = dsigmoid(a)
+
+        #a = np.dot(dso,t) # nx250
+        #a = np.dot(a,w3.T)
+        #a = dsigmoid(a)    # V2
+
         dw2 = np.dot(e.T,a)
 
         db1 = a
@@ -187,7 +192,7 @@ class NeuralNetwork:
     def train(self, converted_train_inputs, converted_train_targets):
 
         learning_rate = 0.0001
-        batch_size = 1490 # 745 best
+        batch_size = 745 # 745 best
         epochs = 10 # 5 best
 
         train_length = len(converted_train_inputs)
@@ -297,6 +302,8 @@ def softmax_gradient(z, Sz):
     for i in range(N):
         for j in range(N):
             D[i, j] = Sz[i, 0] * (np.float32(i == j) - Sz[j, 0])
+
+    #D = -np.outer(Sz, Sz) + np.diag(Sz.flatten())
     return D
 
 def sigmoid(x):
@@ -375,7 +382,16 @@ def tsne_visualization():
 
     results = TSNE(n_components=2).fit_transform(X_rounded)
     tsne_results = pd.DataFrame(results, columns=['tsne1', 'tsne2'])
-    plt.scatter(tsne_results['tsne1'], tsne_results['tsne2'])
+
+    #plt.scatter(tsne_results['tsne1'], tsne_results['tsne2'])
+
+    words = np.load('data/vocab.npy')
+
+    for i in range(250):
+        plt.scatter(tsne_results['tsne1'][i], tsne_results['tsne2'][i], marker='x', color='red')
+        plt.text(tsne_results['tsne1'][i], tsne_results['tsne2'][i], words[i], fontsize=9)
+
+
     plt.show()
 
 def main():
@@ -394,7 +410,7 @@ def main():
     # network[4] = b2 -> (1, 250)
     network = NeuralNetwork()
 
-    network.train(converted_train_inputs,converted_train_targets)
+    #network.train(converted_train_inputs,converted_train_targets)
     tsne_visualization()
 
 if __name__ == '__main__':
