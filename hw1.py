@@ -6,9 +6,12 @@ from random import random
 from matplotlib import pyplot as plt
 from sklearn.manifold import TSNE
 import pandas as pd
+from sklearn.utils import shuffle
 
 class NeuralNetwork:
     def __init__(self):
+
+        seed(10)
 
         # Initialize the network
         network = list()
@@ -74,7 +77,7 @@ class NeuralNetwork:
                 max_index = i
         guess[0][max_index] = 1
 
-        return loss, guess, f_h, s_o, e, o
+        return loss, guess, f_h, s_o, e, o, h
 
     # Forward propagate batch:
     def forward_propagation_batch(self, batch_size, input_batch, target_batch):
@@ -85,23 +88,25 @@ class NeuralNetwork:
         s_o_batch =[] # output layer
         e_batch = [] # embeddings for batch
         o_batch = []
+        h_batch = []
 
         for i in range(batch_size):
-            loss, guess, f_h, s_o, e, o = self.forward_propagation(input_batch[i], target_batch[i])
+            loss, guess, f_h, s_o, e, o, h = self.forward_propagation(input_batch[i], target_batch[i])
             losses.append(loss)
             guesses.append(guess)
             f_h_batch.append(f_h)
             s_o_batch.append(s_o)
             e_batch.append(e)
             o_batch.append(o)
+            h_batch.append(h)
 
         average_loss = np.average(losses)
         total_loss = np.sum(losses)
 
-        return average_loss, total_loss, guesses, f_h_batch, s_o_batch, e_batch, o_batch
+        return average_loss, total_loss, guesses, f_h_batch, s_o_batch, e_batch, o_batch, h_batch
 
     # Calculate gradients:
-    def backprop(self, input_batch, target_batch, f_h_batch, s_o_batch, e_batch, o_batch):
+    def backprop(self, input_batch, target_batch, f_h_batch, s_o_batch, e_batch, o_batch, h_batch):
 
         # Return dw3, db2, dw2, db1, dw1
 
@@ -115,28 +120,23 @@ class NeuralNetwork:
         o = np.array(o_batch)
         o = np.squeeze(o) # 0 -> nx250
 
-        dso = softmax_gradient(o, so) # Need to be nxn
+        h = np.array(h_batch)
+        h = np.squeeze(h)  # 0 -> nx128
 
         t = (so - y)
 
         dw3 = np.dot(fh.T, t) # dw3 -> 128x250 (V1)
-
-        #dw3 = np.dot(fh.T, dso)
-        #dw3 = np.dot(dw3, t)   V2
 
         db2 = t
         db2 = db2.sum(axis=0) # db2 -> 1x250 olmalı ama n x 250, sum aldım, emin değilim.
 
         w3 = self.network[3]
 
-        a = np.dot(t,w3.T) # a -> nx128 (V1)
-        a = dsigmoid(a)
+        a = np.dot(t, w3.T)  # a -> nx128
+        h = dsigmoid(h)
+        h = a*h
 
-        #a = np.dot(dso,t) # nx250
-        #a = np.dot(a,w3.T)
-        #a = dsigmoid(a)    # V2
-
-        dw2 = np.dot(e.T,a)
+        dw2 = np.dot(e.T, h)
 
         db1 = a
         db1 = db1.sum(axis=0)  # db1 -> 1x128 olmalı ama n x 128, sum aldım, emin değilim.
@@ -172,7 +172,7 @@ class NeuralNetwork:
         r2 = np.dot(x2.T, y2) # 250x16
         r3 = np.dot(x3.T, y3) # 250x16
 
-        dw1 = r1+r2+r3 / 3 # dw1 -> 250x16  # Avg aldım?
+        dw1 = r1+r2+r3 # dw1 -> 250x16  # Avg aldım?
 
         return dw3, db2, dw2, db1, dw1
 
@@ -191,9 +191,9 @@ class NeuralNetwork:
 
     def train(self, converted_train_inputs, converted_train_targets):
 
-        learning_rate = 0.0001
+        learning_rate = 0.001
         batch_size = 745 # 745 best
-        epochs = 10 # 5 best
+        epochs = 5 # 5 best  5 epoch sonrası update olmuyor
 
         train_length = len(converted_train_inputs)
         total_batch_number = train_length / batch_size
@@ -207,10 +207,13 @@ class NeuralNetwork:
         # Training loop
 
         for e in range(epochs):
-            if e >= 5:
+
+            converted_train_inputs, converted_train_targets = shuffle(converted_train_inputs, converted_train_targets)
+
+            if e >= 8:
                 learning_rate = learning_rate/10
-            #if e >= 15:
-            #    learning_rate = learning_rate/15
+            if e >= 15:
+                learning_rate = learning_rate/100
             batch_total_losses = []
             batch_average_losses = []
             batch_accuracies = []
@@ -219,9 +222,9 @@ class NeuralNetwork:
                 input_batch = converted_train_inputs[b * batch_size:b * batch_size + batch_size]
                 target_batch = converted_train_targets[b * batch_size:b * batch_size + batch_size]
 
-                average_loss, total_loss, guesses, f_h_batch, s_o_batch, e_batch, o_batch = self.forward_propagation_batch(
+                average_loss, total_loss, guesses, f_h_batch, s_o_batch, e_batch, o_batch, h_batch = self.forward_propagation_batch(
                     batch_size, input_batch, target_batch)
-                dw3, db2, dw2, db1, dw1 = self.backprop(input_batch, target_batch, f_h_batch, s_o_batch, e_batch, o_batch)
+                dw3, db2, dw2, db1, dw1 = self.backprop(input_batch, target_batch, f_h_batch, s_o_batch, e_batch, o_batch, h_batch)
                 self.update(dw3, db2, dw2, db1, dw1, learning_rate)
 
                 batch_accuracy = self.calculate_training_accuracy(guesses, target_batch)
@@ -410,8 +413,8 @@ def main():
     # network[4] = b2 -> (1, 250)
     network = NeuralNetwork()
 
-    #network.train(converted_train_inputs,converted_train_targets)
-    tsne_visualization()
+    network.train(converted_train_inputs,converted_train_targets)
+    #tsne_visualization()
 
 if __name__ == '__main__':
     main()
