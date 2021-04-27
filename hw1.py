@@ -193,7 +193,7 @@ class NeuralNetwork:
 
         learning_rate = 0.001
         batch_size = 745 # 745 best
-        epochs = 5 # 5 best  5 epoch sonrası update olmuyor
+        epochs = 10 # 5 best  5 epoch sonrası update olmuyor
 
         train_length = len(converted_train_inputs)
         total_batch_number = train_length / batch_size
@@ -413,8 +413,8 @@ def main():
     # network[4] = b2 -> (1, 250)
     network = NeuralNetwork()
 
-    network.train(converted_train_inputs,converted_train_targets)
-    #tsne_visualization()
+    #network.train(converted_train_inputs,converted_train_targets)
+    tsne_visualization()
 
 if __name__ == '__main__':
     main()
