@@ -1,0 +1,155 @@
+import numpy as np
+from matplotlib import pyplot as plt
+from sklearn.manifold import TSNE
+import pandas as pd
+import pickle
+from hw1 import NeuralNetwork
+
+def load_files():
+    train_file = 'data/train_inputs.npy'
+    train_file2 = 'data/train_targets.npy'
+    test_file = 'data/test_inputs.npy'
+    test_file2 = 'data/test_targets.npy'
+    validation_file = 'data/valid_inputs.npy'
+    validation_file2 = 'data/valid_targets.npy'
+    vocab_file = 'data/vocab.npy'
+
+    train_inputs = np.load(train_file)
+    train_targets = np.load(train_file2)
+    test_inputs = np.load(test_file)
+    test_targets = np.load(test_file2)
+    valid_inputs = np.load(validation_file)
+    valid_targets = np.load(validation_file2)
+    vocab = np.load(vocab_file)
+
+    return train_inputs, train_targets, test_inputs, test_targets,valid_inputs, valid_targets, vocab
+
+def softmax(x):
+  # Numerically stable softmax based on
+  # http://timvieira.github.io/blog/post/2014/02/11/exp-normalize-trick/
+  b = x.max()
+  y = np.exp(x - b)
+  return y / y.sum()
+
+def sigmoid(x):
+    return 1/(1+np.exp(-x))
+
+def get_prediction(model, row):
+    # row = [1x250, 1x250, 1x250] one input -> x1,x2,x3
+    # y is real y for that row
+
+    # 1. Embedding Layer
+    e1 = row[0] @ model.network[0]  # OK -> 1x16
+    e2 = row[1] @ model.network[0]  # OK -> 1x16
+    e3 = row[2] @ model.network[0]  # OK -> 1x16
+
+    e = np.concatenate([e1, e2, e3])
+    e = np.reshape(e, (-1, 48))  # OK -> 1x48
+
+    # 2. Hidden Layer
+    h = e @ model.network[1]
+    h = np.reshape(h, (-1, 128))  # OK -> 1x128
+    h = h + model.network[2]  # OK -> 1x128
+
+    # 3. Sigmoid Activation
+    f_h = sigmoid(h)  # OK(?) -> 1x128
+
+    # 4. Output layer
+    o = f_h @ model.network[3]  # OK -> 1x250
+    o = o + model.network[4]  # OK -> 1x250
+
+    # 5. Softmax
+    s_o = softmax(o)  # OK(?) -> 1x250
+
+    # Optional: Get one hot encoding of prediction
+    guess = np.zeros_like(s_o)
+    max = s_o[0][0]
+    max_index = 0
+
+    for i in range(250):
+        if s_o[0][i] > max:
+            max = s_o[0][i]
+            max_index = i
+    guess[0][max_index] = 1
+
+    return guess
+
+def tsne_visualization(model, words):
+
+    embedding = model.network[0]
+
+    X = np.array(embedding)
+
+    X_rounded = np.round(X, decimals=1)
+
+    results = TSNE(n_components=2).fit_transform(X_rounded)
+    tsne_results = pd.DataFrame(results, columns=['tsne1', 'tsne2'])
+
+    for i in range(250):
+        plt.scatter(tsne_results['tsne1'][i], tsne_results['tsne2'][i], marker='x', color='red')
+        plt.text(tsne_results['tsne1'][i], tsne_results['tsne2'][i], words[i], fontsize=9)
+
+    plt.show()
+
+def convert_one_hot(word_index):
+    one_hot_representation = np.zeros(250)
+    one_hot_representation[word_index] = 1
+    return one_hot_representation
+
+def convert_one_hot_all_test(test_inputs, test_targets):
+    # Convert train inputs into one hot representation
+    converted_test_inputs = []
+    converted_test_targets = []
+
+    for i in range(len(test_inputs)):
+
+        converted_row = []
+        converted1 = convert_one_hot(test_inputs[i][0])
+        converted2 = convert_one_hot(test_inputs[i][1])
+        converted3 = convert_one_hot(test_inputs[i][2])
+        converted_row.append(converted1)
+        converted_row.append(converted2)
+        converted_row.append(converted3)
+        converted_test_inputs.append(converted_row)
+
+        converted_target = convert_one_hot(test_targets[i])
+        converted_test_targets.append(converted_target)
+
+    return converted_test_inputs, converted_test_targets
+
+def convert_one_hot_to_index(one_hot_vector):
+    index = 0
+    #print(one_hot_vector[0][143])
+    for i in range(len(one_hot_vector)):
+        if one_hot_vector[0][i] != 0.0:
+            print(index)
+            index = i
+    return index
+
+def main():
+
+    # Load Files
+    train_inputs, train_targets, test_inputs, test_targets, valid_inputs, valid_targets, vocab = load_files()
+
+    # Convert test inputs into one hot representation
+    converted_test_inputs, converted_test_targets = convert_one_hot_all_test(test_inputs, test_targets)
+
+    file = open("my_model.pickle", 'rb')
+    my_model = pickle.load(file)
+    file.close()
+
+    words = np.load('data/vocab.npy')
+
+    tsne_visualization(my_model, words)
+    guess = get_prediction(my_model, converted_test_inputs[4])
+    print(guess)
+    guess = convert_one_hot_to_index(guess)
+
+    print(test_inputs[1])
+    print(words[42])
+    print(words[67])
+    print(words[242])
+    print(words[143])
+
+if __name__ == '__main__':
+    main()
