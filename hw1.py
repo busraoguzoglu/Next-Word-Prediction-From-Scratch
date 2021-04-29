@@ -7,6 +7,7 @@ from matplotlib import pyplot as plt
 from sklearn.manifold import TSNE
 import pandas as pd
 from sklearn.utils import shuffle
+import pickle
 
 class NeuralNetwork:
     def __init__(self):
@@ -192,8 +193,8 @@ class NeuralNetwork:
     def train(self, converted_train_inputs, converted_train_targets):
 
         learning_rate = 0.001
-        batch_size = 745 # 745 best
-        epochs = 10 # 5 best  5 epoch sonrası update olmuyor
+        batch_size = 500 # 745 best (10 epoch)
+        epochs = 30 # 5 best  5 epoch sonrası update olmuyor
 
         train_length = len(converted_train_inputs)
         total_batch_number = train_length / batch_size
@@ -210,10 +211,10 @@ class NeuralNetwork:
 
             converted_train_inputs, converted_train_targets = shuffle(converted_train_inputs, converted_train_targets)
 
-            if e >= 8:
-                learning_rate = learning_rate/10
             if e >= 15:
-                learning_rate = learning_rate/100
+                learning_rate = learning_rate/10
+            #if e >= 15:
+            #    learning_rate = learning_rate/100
             batch_total_losses = []
             batch_average_losses = []
             batch_accuracies = []
@@ -290,12 +291,13 @@ def softmax(x):
   return y / y.sum()
 
 def softmax_gradient(z, Sz):
+    # Did not use this function #
+
     """Unvectorized computation of the gradient of softmax.
     z: (T, 1) column array of input values.
     Returns D (T, T) the Jacobian matrix of softmax(z) at the given z. D[i, j]
     is DjSi - the partial derivative of Si w.r.t. input j.
     """
-
     #z -> o
     #Sz -> so
 
@@ -311,7 +313,6 @@ def softmax_gradient(z, Sz):
 
 def sigmoid(x):
     return 1/(1+np.exp(-x))
-
 
 def dsigmoid(x): # Derivative of sigmoid
   return sigmoid(x) * (1 - sigmoid(x))
@@ -368,32 +369,24 @@ def load_files():
 
     return train_inputs, train_targets, test_inputs, test_targets,valid_inputs, valid_targets, vocab
 
-def tsne_visualization():
+def tsne_visualization(model):
 
-    embedding = np.load('embeddings.npy')
-
-    # TODO: Scale embeddings into certain range,
-    # TODO: Add vocab names to plot
+    #embedding = np.load('embeddings.npy')
+    embedding = model.network[0]
 
     X = np.array(embedding)
     print(X[0:3])
 
-    #X = np.array([[-1.89947302, -1.71278179, -2.01633414, -1.89693931],
-    #              [-9.18220909, -8.27972830, -9.74712541, -9.16996093],
-    #              [-2.36182356, -2.12968984, -2.50712985, -2.35867313]])
     X_rounded = np.round(X, decimals=1)
 
     results = TSNE(n_components=2).fit_transform(X_rounded)
     tsne_results = pd.DataFrame(results, columns=['tsne1', 'tsne2'])
-
-    #plt.scatter(tsne_results['tsne1'], tsne_results['tsne2'])
 
     words = np.load('data/vocab.npy')
 
     for i in range(250):
         plt.scatter(tsne_results['tsne1'][i], tsne_results['tsne2'][i], marker='x', color='red')
         plt.text(tsne_results['tsne1'][i], tsne_results['tsne2'][i], words[i], fontsize=9)
-
 
     plt.show()
 
@@ -411,10 +404,20 @@ def main():
     # network[2] = b1 -> (1, 128)
     # network[3] = w3 -> (128,250)
     # network[4] = b2 -> (1, 250)
-    network = NeuralNetwork()
 
-    #network.train(converted_train_inputs,converted_train_targets)
-    tsne_visualization()
+    network = NeuralNetwork()
+    network.train(converted_train_inputs,converted_train_targets)
+
+    # Save the model as pickle
+    with open('my_model.pickle', 'wb') as f:
+        pickle.dump(network, f)
+    f.close()
+
+    file = open("my_model.pickle", 'rb')
+    my_model = pickle.load(file)
+    file.close()
+
+    tsne_visualization(my_model)
 
 if __name__ == '__main__':
     main()
