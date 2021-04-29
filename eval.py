@@ -72,7 +72,7 @@ def get_prediction(model, row):
             max_index = i
     guess[0][max_index] = 1
 
-    return guess
+    return guess, max_index
 
 def tsne_visualization(model, words):
 
@@ -119,10 +119,9 @@ def convert_one_hot_all_test(test_inputs, test_targets):
 
 def convert_one_hot_to_index(one_hot_vector):
     index = 0
-    #print(one_hot_vector[0][143])
+
     for i in range(len(one_hot_vector)):
-        if one_hot_vector[0][i] != 0.0:
-            print(index)
+        if one_hot_vector[i] != 0.0:
             index = i
     return index
 
@@ -140,16 +139,25 @@ def main():
 
     words = np.load('data/vocab.npy')
 
-    tsne_visualization(my_model, words)
-    guess = get_prediction(my_model, converted_test_inputs[4])
-    print(guess)
-    guess = convert_one_hot_to_index(guess)
+    #tsne_visualization(my_model, words)
 
-    print(test_inputs[1])
-    print(words[42])
-    print(words[67])
-    print(words[242])
-    print(words[143])
+    guess, max_index = get_prediction(my_model, converted_test_inputs[1548])
+
+    # TODO:
+    # Points to choose:
+    # ’city of new’
+    # ’life in the’
+    # ’he is the’
+
+    word1 = convert_one_hot_to_index(converted_test_inputs[1548][0])
+    word2 = convert_one_hot_to_index(converted_test_inputs[1548][1])
+    word3 = convert_one_hot_to_index(converted_test_inputs[1548][2])
+
+    print(words[word1])
+    print(words[word2])
+    print(words[word3])
+    print(words[max_index])
+
 
 if __name__ == '__main__':
     main()
