@@ -125,6 +125,37 @@ def convert_one_hot_to_index(one_hot_vector):
             index = i
     return index
 
+def convert_word_to_index(words, word):
+    index = 0
+    for i in range(len(words)):
+        if words[i] == word:
+            index = i
+
+    return index
+
+def guess_next_word(model, words, word1, word2, word3):
+    
+    word_index_1 = convert_word_to_index(words, word1)
+    word_index_2 = convert_word_to_index(words, word2)
+    word_index_3 = convert_word_to_index(words, word3)
+
+    print(word_index_1, word_index_2, word_index_3)
+
+    test_row = []
+
+    word_1 = convert_one_hot(word_index_1)
+    word_2 = convert_one_hot(word_index_2)
+    word_3 = convert_one_hot(word_index_3)
+
+    test_row.append(word_1)
+    test_row.append(word_2)
+    test_row.append(word_3)
+
+    guess, guess_index = get_prediction(model, test_row)
+    guessed_word = words[guess_index]
+    
+    print(word1,' ', word2,' ', word3,' ', guessed_word)
+
 def main():
 
     # Load Files
@@ -133,7 +164,7 @@ def main():
     # Convert test inputs into one hot representation
     converted_test_inputs, converted_test_targets = convert_one_hot_all_test(test_inputs, test_targets)
 
-    file = open("my_model.pickle", 'rb')
+    file = open("best_setting/model.pk", 'rb')
     my_model = pickle.load(file)
     file.close()
 
@@ -141,23 +172,19 @@ def main():
 
     #tsne_visualization(my_model, words)
 
-    guess, max_index = get_prediction(my_model, converted_test_inputs[1548])
-
     # TODO:
     # Points to choose:
     # ’city of new’
     # ’life in the’
     # ’he is the’
 
-    word1 = convert_one_hot_to_index(converted_test_inputs[1548][0])
-    word2 = convert_one_hot_to_index(converted_test_inputs[1548][1])
-    word3 = convert_one_hot_to_index(converted_test_inputs[1548][2])
-
-    print(words[word1])
-    print(words[word2])
-    print(words[word3])
-    print(words[max_index])
-
+    guess_next_word(my_model, words, 'city', 'of', 'new')
+    guess_next_word(my_model, words, 'life', 'in', 'the')
+    guess_next_word(my_model, words, 'he', 'is', 'the')
+    guess_next_word(my_model, words, 'world', 'is', 'a')
+    guess_next_word(my_model, words, 'where', 'is', 'the')
+    guess_next_word(my_model, words, 'how', 'are', 'the')
+    guess_next_word(my_model, words, 'we', 'are', 'the')
 
 if __name__ == '__main__':
     main()
