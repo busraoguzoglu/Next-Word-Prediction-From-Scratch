@@ -139,8 +139,6 @@ def guess_next_word(model, words, word1, word2, word3):
     word_index_2 = convert_word_to_index(words, word2)
     word_index_3 = convert_word_to_index(words, word3)
 
-    print(word_index_1, word_index_2, word_index_3)
-
     test_row = []
 
     word_1 = convert_one_hot(word_index_1)
@@ -155,6 +153,19 @@ def guess_next_word(model, words, word1, word2, word3):
     guessed_word = words[guess_index]
     
     print(word1,' ', word2,' ', word3,' ', guessed_word)
+
+def get_test_accuracy(model, converted_test_inputs, test_targets):
+
+    data_size = len(converted_test_inputs)
+    correct_guess = 0
+
+    for i in range(data_size):
+        guess, guess_index = get_prediction(model, converted_test_inputs[i])
+        if guess_index == test_targets[i]:
+            correct_guess+=1
+
+    print('Test accuracy is:', correct_guess/data_size)
+
 
 def main():
 
@@ -181,10 +192,13 @@ def main():
     guess_next_word(my_model, words, 'city', 'of', 'new')
     guess_next_word(my_model, words, 'life', 'in', 'the')
     guess_next_word(my_model, words, 'he', 'is', 'the')
-    guess_next_word(my_model, words, 'world', 'is', 'a')
-    guess_next_word(my_model, words, 'where', 'is', 'the')
-    guess_next_word(my_model, words, 'how', 'are', 'the')
-    guess_next_word(my_model, words, 'we', 'are', 'the')
+    #guess_next_word(my_model, words, 'world', 'is', 'a')
+    #guess_next_word(my_model, words, 'where', 'is', 'the')
+    #guess_next_word(my_model, words, 'how', 'are', 'the')
+    #guess_next_word(my_model, words, 'we', 'are', 'the')
+
+    # Get the test accuracy:
+    get_test_accuracy(my_model,converted_test_inputs,test_targets)
 
 if __name__ == '__main__':
     main()
