@@ -31,8 +31,6 @@ update:
 class NeuralNetwork:
     def __init__(self):
 
-        seed(10)
-
         # Initialize the network
         network = list()
 
