@@ -160,7 +160,7 @@ def main():
     # Training Loop:
     train(network, converted_train_inputs,converted_train_targets,
           converted_valid_inputs, valid_targets,
-          learning_rate=0.001, batch_size=500, epochs=50)
+          learning_rate=0.001, batch_size=500, epochs=35)
 
     # Save the model as pickle
     with open('modelv2.pk', 'wb') as f:

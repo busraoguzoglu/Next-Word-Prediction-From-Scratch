@@ -186,13 +186,12 @@ def main():
 
     # Guessing test:
 
-    guess_next_word(my_model, words, 'city', 'of', 'new')
-    guess_next_word(my_model, words, 'life', 'in', 'the')
-    guess_next_word(my_model, words, 'he', 'is', 'the')
-    # guess_next_word(my_model, words, 'world', 'is', 'a')
-    # guess_next_word(my_model, words, 'where', 'is', 'the')
-    # guess_next_word(my_model, words, 'how', 'are', 'the')
-    # guess_next_word(my_model, words, 'we', 'are', 'the')
+    #guess_next_word(my_model, words, 'city', 'of', 'new')
+    #guess_next_word(my_model, words, 'life', 'in', 'the')
+    #guess_next_word(my_model, words, 'he', 'is', 'the')
+    guess_next_word(my_model, words, 'world', 'is', 'a')
+    guess_next_word(my_model, words, 'where', 'is', 'the')
+    guess_next_word(my_model, words, 'how', 'are', 'the')
 
     # Get the test accuracy:
     get_test_accuracy(my_model, converted_test_inputs, test_targets)
