@@ -25,8 +25,7 @@ backprop:
     calculates gradients    
 update:
     updates the network according to gradients   
-train:
-    the training loop
+
 """
 
 class NeuralNetwork:
@@ -209,68 +208,6 @@ class NeuralNetwork:
         self.network[2] -= learning_rate * db1
         self.network[3] -= learning_rate * dw3
         self.network[4] -= learning_rate * db2
-
-    def train(self, converted_train_inputs, converted_train_targets):
-
-        learning_rate = 0.001
-        batch_size = 500 # 745 best (10 epoch)
-        epochs = 50 # 5 best  5 epoch sonrası update olmuyor
-
-        train_length = len(converted_train_inputs)
-        total_batch_number = train_length / batch_size
-
-        epoch_total_losses = []
-        epoch_average_losses = []
-        epoch_accuracies = []
-
-        # Training loop
-
-        for e in range(epochs):
-
-            converted_train_inputs, converted_train_targets = shuffle(converted_train_inputs, converted_train_targets)
-
-            if e >= 25:
-                learning_rate = learning_rate/10
-            #if e >= 15:
-            #    learning_rate = learning_rate/100
-            batch_total_losses = []
-            batch_average_losses = []
-            batch_accuracies = []
-
-            for b in range(int(total_batch_number)):
-                input_batch = converted_train_inputs[b * batch_size:b * batch_size + batch_size]
-                target_batch = converted_train_targets[b * batch_size:b * batch_size + batch_size]
-
-                average_loss, total_loss, guesses, f_h_batch, s_o_batch, e_batch, o_batch, h_batch = self.forward_propagation_batch(
-                    batch_size, input_batch, target_batch)
-                dw3, db2, dw2, db1, dw1 = self.backprop(input_batch, target_batch, f_h_batch, s_o_batch, e_batch, o_batch, h_batch)
-                self.update(dw3, db2, dw2, db1, dw1, learning_rate)
-
-                batch_accuracy = self.calculate_training_accuracy(guesses, target_batch)
-
-                batch_total_losses.append(total_loss)
-                batch_average_losses.append(average_loss)
-                batch_accuracies.append(batch_accuracy)
-
-                if b % 10 == 0:
-                    print("\nAverage loss over batch:", np.round(average_loss, decimals=2))
-                    print("\nTotal loss over batch:", np.round(total_loss, decimals=2))
-                    print("\nAccuracy over batch:", np.round(batch_accuracy, decimals=2))
-
-            batch_total_losses_avg = sum(batch_total_losses) / len(batch_total_losses)
-            batch_average_losses_avg = sum(batch_average_losses) / len(batch_average_losses)
-            batch_accuracies_avg = sum(batch_accuracies) / len(batch_accuracies)
-
-            epoch_total_losses.append(batch_total_losses_avg)
-            epoch_average_losses.append(batch_average_losses_avg)
-            epoch_accuracies.append(batch_accuracies_avg)
-
-        plt.plot(epoch_total_losses)
-        plt.show()
-        plt.plot(epoch_average_losses)
-        plt.show()
-        plt.plot(epoch_accuracies)
-        plt.show()
 
     def calculate_training_accuracy(self, guesses, train_targets):
         batch_size = len(train_targets)

@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 from sklearn.manifold import TSNE
 import pandas as pd
 import pickle
-from hw1 import NeuralNetwork
+from network import NeuralNetwork
 
 def load_files():
     train_file = 'data/train_inputs.npy'
@@ -22,17 +22,17 @@ def load_files():
     valid_targets = np.load(validation_file2)
     vocab = np.load(vocab_file)
 
-    return train_inputs, train_targets, test_inputs, test_targets,valid_inputs, valid_targets, vocab
+    return train_inputs, train_targets, test_inputs, test_targets, valid_inputs, valid_targets, vocab
 
 def softmax(x):
-  # Numerically stable softmax based on
-  # http://timvieira.github.io/blog/post/2014/02/11/exp-normalize-trick/
-  b = x.max()
-  y = np.exp(x - b)
-  return y / y.sum()
+    # Numerically stable softmax based on
+    # http://timvieira.github.io/blog/post/2014/02/11/exp-normalize-trick/
+    b = x.max()
+    y = np.exp(x - b)
+    return y / y.sum()
 
 def sigmoid(x):
-    return 1/(1+np.exp(-x))
+    return 1 / (1 + np.exp(-x))
 
 def get_prediction(model, row):
     # row = [1x250, 1x250, 1x250] one input -> x1,x2,x3
@@ -75,11 +75,8 @@ def get_prediction(model, row):
     return guess, max_index
 
 def tsne_visualization(model, words):
-
     embedding = model.network[0]
-
     X = np.array(embedding)
-
     X_rounded = np.round(X, decimals=1)
 
     results = TSNE(n_components=2).fit_transform(X_rounded)
@@ -96,13 +93,13 @@ def convert_one_hot(word_index):
     one_hot_representation[word_index] = 1
     return one_hot_representation
 
+
 def convert_one_hot_all_test(test_inputs, test_targets):
     # Convert train inputs into one hot representation
     converted_test_inputs = []
     converted_test_targets = []
 
     for i in range(len(test_inputs)):
-
         converted_row = []
         converted1 = convert_one_hot(test_inputs[i][0])
         converted2 = convert_one_hot(test_inputs[i][1])
@@ -117,6 +114,7 @@ def convert_one_hot_all_test(test_inputs, test_targets):
 
     return converted_test_inputs, converted_test_targets
 
+
 def convert_one_hot_to_index(one_hot_vector):
     index = 0
 
@@ -124,6 +122,7 @@ def convert_one_hot_to_index(one_hot_vector):
         if one_hot_vector[i] != 0.0:
             index = i
     return index
+
 
 def convert_word_to_index(words, word):
     index = 0
@@ -133,8 +132,8 @@ def convert_word_to_index(words, word):
 
     return index
 
+
 def guess_next_word(model, words, word1, word2, word3):
-    
     word_index_1 = convert_word_to_index(words, word1)
     word_index_2 = convert_word_to_index(words, word2)
     word_index_3 = convert_word_to_index(words, word3)
@@ -151,24 +150,23 @@ def guess_next_word(model, words, word1, word2, word3):
 
     guess, guess_index = get_prediction(model, test_row)
     guessed_word = words[guess_index]
-    
-    print(word1,' ', word2,' ', word3,' ', guessed_word)
+
+    print(word1, ' ', word2, ' ', word3, ' ', guessed_word)
+
 
 def get_test_accuracy(model, converted_test_inputs, test_targets):
-
     data_size = len(converted_test_inputs)
     correct_guess = 0
 
     for i in range(data_size):
         guess, guess_index = get_prediction(model, converted_test_inputs[i])
         if guess_index == test_targets[i]:
-            correct_guess+=1
+            correct_guess += 1
 
-    print('Test accuracy is:', correct_guess/data_size)
+    print('Test accuracy is:', correct_guess / data_size)
 
 
 def main():
-
     # Load Files
     train_inputs, train_targets, test_inputs, test_targets, valid_inputs, valid_targets, vocab = load_files()
 
@@ -181,24 +179,24 @@ def main():
 
     words = np.load('data/vocab.npy')
 
-    #tsne_visualization(my_model, words)
+    # TSNE Visualization:
 
-    # TODO:
-    # Points to choose:
-    # ’city of new’
-    # ’life in the’
-    # ’he is the’
+    # tsne_visualization(my_model, words)
+
+
+    # Guessing test:
 
     guess_next_word(my_model, words, 'city', 'of', 'new')
     guess_next_word(my_model, words, 'life', 'in', 'the')
     guess_next_word(my_model, words, 'he', 'is', 'the')
-    #guess_next_word(my_model, words, 'world', 'is', 'a')
-    #guess_next_word(my_model, words, 'where', 'is', 'the')
-    #guess_next_word(my_model, words, 'how', 'are', 'the')
-    #guess_next_word(my_model, words, 'we', 'are', 'the')
+    # guess_next_word(my_model, words, 'world', 'is', 'a')
+    # guess_next_word(my_model, words, 'where', 'is', 'the')
+    # guess_next_word(my_model, words, 'how', 'are', 'the')
+    # guess_next_word(my_model, words, 'we', 'are', 'the')
 
     # Get the test accuracy:
-    get_test_accuracy(my_model,converted_test_inputs,test_targets)
+    get_test_accuracy(my_model, converted_test_inputs, test_targets)
+
 
 if __name__ == '__main__':
     main()
