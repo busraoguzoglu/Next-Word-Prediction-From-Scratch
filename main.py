@@ -70,7 +70,7 @@ def load_files():
 
     return train_inputs, train_targets, test_inputs, test_targets,valid_inputs, valid_targets, vocab
 
-def calculate_valid_accuracy(network, converted_valid_inputs, valid_targets):
+def calculate_accuracy(network, converted_valid_inputs, valid_targets):
     data_size = len(converted_valid_inputs)
     correct_guess = 0
 
@@ -134,7 +134,7 @@ def train(network, converted_train_inputs, converted_train_targets, converted_va
         epoch_total_losses.append(batch_total_losses_avg)
 
         # Validation set evaluation at the end of epoch:
-        valid_accuracy = calculate_valid_accuracy(network, converted_valid_inputs, valid_targets)
+        valid_accuracy = calculate_accuracy(network, converted_valid_inputs, valid_targets)
         epoch_valid_accuracy.append(valid_accuracy)
         print("\nValidation acc: %.4f" % (float(valid_accuracy),))
         print("Time taken: %.2fs" % (time.time() - start_time))
@@ -153,19 +153,33 @@ def main():
     # Convert train and validation inputs into one hot representation:
     converted_train_inputs, converted_train_targets = convert_one_hot_all(train_inputs, train_targets)
     converted_valid_inputs, converted_valid_targets = convert_one_hot_all(valid_inputs, valid_targets)
+    converted_test_inputs, converted_test_targets = convert_one_hot_all(test_inputs, test_targets)
 
     # Initialize the Network:
     network = NeuralNetwork()
 
     # Training Loop:
-    train(network, converted_train_inputs,converted_train_targets,
-          converted_valid_inputs, valid_targets,
-          learning_rate=0.001, batch_size=500, epochs=35)
+    #train(network, converted_train_inputs,converted_train_targets,
+    #      converted_valid_inputs, valid_targets,
+    #      learning_rate=0.001, batch_size=500, epochs=35)
 
     # Save the model as pickle
-    with open('modelv2.pk', 'wb') as f:
-        pickle.dump(network, f)
-    f.close()
+    #with open('modelv2.pk', 'wb') as f:
+    #    pickle.dump(network, f)
+    #f.close()
+
+    # Load Model:
+    file = open("best_setting/model.pk", 'rb')
+    my_model = pickle.load(file)
+    file.close()
+
+    # Final validation and test accuracy:
+    valid_accuracy = calculate_accuracy(my_model, converted_valid_inputs, valid_targets)
+    train_accuracy = calculate_accuracy(my_model, converted_train_inputs, train_targets)
+
+    print('final training accuracy is:', train_accuracy)
+    print('final validation accuracy is:', valid_accuracy)
+
 
 if __name__ == '__main__':
     main()
