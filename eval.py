@@ -71,12 +71,10 @@ def get_prediction(model, row):
 
     return guess, max_index
 
-
 def convert_one_hot(word_index):
     one_hot_representation = np.zeros(250)
     one_hot_representation[word_index] = 1
     return one_hot_representation
-
 
 def convert_one_hot_all_test(test_inputs, test_targets):
     # Convert train inputs into one hot representation
@@ -97,7 +95,6 @@ def convert_one_hot_all_test(test_inputs, test_targets):
         converted_test_targets.append(converted_target)
 
     return converted_test_inputs, converted_test_targets
-
 
 def convert_one_hot_to_index(one_hot_vector):
     index = 0
@@ -157,7 +154,7 @@ def main():
     # Convert test inputs into one hot representation
     converted_test_inputs, converted_test_targets = convert_one_hot_all_test(test_inputs, test_targets)
 
-    file = open("best_setting/model.pk", 'rb')
+    file = open("model.pk", 'rb')
     my_model = pickle.load(file)
     file.close()
 

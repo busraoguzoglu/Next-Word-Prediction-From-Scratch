@@ -1,8 +1,5 @@
 import math
 import numpy as np
-from random import seed
-from matplotlib import pyplot as plt
-from sklearn.utils import shuffle
 
 """
 The Network Class

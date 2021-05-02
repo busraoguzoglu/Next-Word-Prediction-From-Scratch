@@ -17,7 +17,6 @@ Saves the model after training
 
 """
 
-
 def convert_one_hot_to_index(one_hot_vector):
     index = 0
     for i in range(len(one_hot_vector)):
@@ -159,23 +158,18 @@ def main():
     network = NeuralNetwork()
 
     # Training Loop:
-    #train(network, converted_train_inputs,converted_train_targets,
-    #      converted_valid_inputs, valid_targets,
-    #      learning_rate=0.001, batch_size=500, epochs=35)
+    train(network, converted_train_inputs,converted_train_targets,
+          converted_valid_inputs, valid_targets,
+          learning_rate=0.001, batch_size=500, epochs=35)
 
     # Save the model as pickle
-    #with open('modelv2.pk', 'wb') as f:
-    #    pickle.dump(network, f)
-    #f.close()
-
-    # Load Model:
-    file = open("best_setting/model.pk", 'rb')
-    my_model = pickle.load(file)
-    file.close()
+    with open('modelv2.pk', 'wb') as f:
+        pickle.dump(network, f)
+    f.close()
 
     # Final validation and test accuracy:
-    valid_accuracy = calculate_accuracy(my_model, converted_valid_inputs, valid_targets)
-    train_accuracy = calculate_accuracy(my_model, converted_train_inputs, train_targets)
+    valid_accuracy = calculate_accuracy(network, converted_valid_inputs, valid_targets)
+    train_accuracy = calculate_accuracy(network, converted_train_inputs, train_targets)
 
     print('final training accuracy is:', train_accuracy)
     print('final validation accuracy is:', valid_accuracy)

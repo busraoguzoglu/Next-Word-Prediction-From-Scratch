@@ -21,7 +21,7 @@ def tsne_visualization(model, words):
 
 def main():
 
-    file = open("best_setting/model.pk", 'rb')
+    file = open("model.pk", 'rb')
     my_model = pickle.load(file)
     file.close()
     words = np.load('data/vocab.npy')
